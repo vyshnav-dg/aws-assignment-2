@@ -30,13 +30,11 @@ Resources:
     Properties:
       Handler: index.handler
       Runtime: python3.13
-      Timeout: 900
+      Timeout: 120
       Role: !GetAtt LambdaExecutionRole.Arn
       Code:
-        ZipFile:
-          !Sub |
+        ZipFile: |
           import logging
-          import json
           import cfnresponse
           import boto3
 
@@ -44,7 +42,7 @@ Resources:
           logger.setLevel(logging.INFO)
 
           def handler(event, context):
-              vpc_id = "${VPCId}"
+              vpc_id = event["ResourceProperties"]["VpcId"]
               request_type = event["RequestType"]
               if request_type == "Delete":
                   # gracefully handle delete of custom Resource
@@ -52,9 +50,13 @@ Resources:
                   return
               try:
                   client = boto3.client("ec2")
-                  resp = client.describe_vpcs()
+                  resp = client.describe_vpcs(VpcIds=[vpc_id])
                   logger.info(f"RESPONSE: {resp}")
-                  cfnresponse.send(event, context, cfnresponse.SUCCESS, resp)
+                  if resp['Vpcs']:
+                    to_send = {"CidrBlock": resp["Vpcs"][0]["CidrBlock"]}
+                    cfnresponse.send(event, context, cfnresponse.SUCCESS, to_send)
+                  else:
+                    cfnresponse.send(event, context, cfnresponse.FAILED, {"error": f"VPC with id {vpc_id} not found"})
               except Exception as e:
                   logger.error(f"ERROR: {str(e)}")
                   cfnresponse.send(event, context, cfnresponse.FAILED, {'error': str(e)})
@@ -64,3 +66,4 @@ Resources:
     Properties:
       ServiceToken: !GetAtt CustomLambdaResource.Arn
       ServiceTimeout: 60
+      VpcId: !Ref VPCId # Pass the vpcid specified from cfn params to the request object to lambda
