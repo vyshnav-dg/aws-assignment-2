@@ -17,6 +17,14 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: LambdaDescribeVPC
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+            - Effect: Allow
+              Action: ec2:DescribeVpcs
+              Resource: "*" 
   CustomLambdaResource:
     Type: AWS::Lambda::Function
     Properties:
@@ -37,13 +45,18 @@ Resources:
 
           def handler(event, context):
               vpc_id = "${VPCId}"
+              request_type = event["RequestType"]
+              if request_type == "Delete:
+                  # gracefully handle delete of custom Resource
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+                  return
               try:
                   client = boto3.client("ec2")
                   resp = client.describe_vpcs()
                   logger.info(f"RESPONSE: {resp}")
                   cfnresponse.send(event, context, cfnresponse.SUCCESS, resp)
               except Exception as e:
-                  logger.error(str(e))
+                  logger.error(f"ERROR: {str(e)}")
                   cfnresponse.send(event, context, cfnresponse.FAILED, {'error': str(e)})
                   raise e
   CFNCustomResource:
