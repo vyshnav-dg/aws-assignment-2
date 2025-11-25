@@ -23,7 +23,7 @@ pipeline {
                 echo "Deploying cloudformation stack with VPC ID: ${params.VPC_ID}"
                 sh """
                     aws cloudformation deploy \
-                        --stack-name assignment-3 \
+                        --stack-name assignment-2 \
                         --template-file cft.yaml \
                         --parameter-overrides VPCId=${params.VPC_ID} \
                         --capabilities CAPABILITY_IAM
