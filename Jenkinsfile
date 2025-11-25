@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    parameters {
+        string(name: 'VPC_ID', defaultValue: 'vpc-0469328b35b6382b7', description: 'VPC ID to pass to CFN')
+    }
+
     environment {
         AWS_ACCESS_KEY_ID = credentials("AWS_ACCESS_KEY_ID")
         AWS_SECRET_ACCESS_KEY = credentials("AWS_SECRET_ACCESS_KEY")
@@ -16,12 +20,12 @@ pipeline {
         }
         stage("Deploy Stack") {
             steps {
-                echo "Deploying cloudformation stack"
+                echo "Deploying cloudformation stack with VPC ID: ${params.VPC_ID}"
                 sh """
                     aws cloudformation deploy \
                         --stack-name assignment-3 \
                         --template-file cft.yaml \
-                        --parameter-overrides VPCId=vpc-0469328b35b6382b7 \
+                        --parameter-overrides VPCId=${params.VPC_ID} \
                         --capabilities CAPABILITY_IAM
                 """
             }
