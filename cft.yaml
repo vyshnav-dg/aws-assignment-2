@@ -67,3 +67,18 @@ Resources:
       ServiceToken: !GetAtt CustomLambdaResource.Arn
       ServiceTimeout: 60
       VpcId: !Ref VPCId # Pass the vpcid specified from cfn params to the request object to lambda
+  VPCSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    DependsOn: CFNCustomResource
+    Properties:
+      GroupDescription: "Ingress for port 22"
+      VpcId: !Ref VPCId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !GetAtt CFNCustomResource.CidrBlock
+Outputs:
+  SecGroupId:
+    Description: "ID of the security group created"
+    Value: !Ref VPCSecurityGroup
