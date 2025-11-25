@@ -42,13 +42,13 @@ Resources:
           logger.setLevel(logging.INFO)
 
           def handler(event, context):
-              vpc_id = event["ResourceProperties"]["VpcId"]
               request_type = event["RequestType"]
               if request_type == "Delete":
                   # gracefully handle delete of custom Resource
                   cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
                   return
               try:
+                  vpc_id = event["ResourceProperties"]["VpcId"]
                   client = boto3.client("ec2")
                   resp = client.describe_vpcs(VpcIds=[vpc_id])
                   logger.info(f"RESPONSE: {resp}")
