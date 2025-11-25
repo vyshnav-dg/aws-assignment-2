@@ -14,18 +14,13 @@ pipeline {
                 sh "aws sts get-caller-identity"
             }
         }
-        stage("Checkout") {
-            steps {
-                checkout scm
-            }
-        }
         stage("Deploy Stack") {
             steps {
                 echo "Deploying cloudformation stack"
                 sh """
                     aws cloudformation deploy \
                         --stack-name assignment-3 \
-                        --template-file file://cft.yaml \
+                        --template-file cft.yaml \
                         --parameter-overrides VPCId=vpc-0469328b35b6382b7 \
                         --capabilities CAPABILITY_IAM
                 """
