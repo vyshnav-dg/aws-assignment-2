@@ -1,0 +1,53 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Assignment 2"
+Parameters:
+  VPCId:
+    Type: String
+    Description: The VPC Id to check
+Resources:
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+  CustomLambdaResource:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.handler
+      Runtime: python3.13
+      Timeout: 900
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile:
+          !Sub |
+          import logging
+          import json
+          import cfnresponse
+          import boto3
+
+          logger = logging.getLogger()
+          logger.setLevel(logging.INFO)
+
+          def handler(event, context):
+              vpc_id = "${VPCId}"
+              try:
+                  client = boto3.client("ec2")
+                  resp = client.describe_vpcs()
+                  logger.info(f"RESPONSE: {resp}")
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, resp)
+              except Exception as e:
+                  logger.error(str(e))
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {'error': str(e)})
+                  raise e
+  CFNCustomResource:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt CustomLambdaResource.Arn
+      ServiceTimeout: 60
